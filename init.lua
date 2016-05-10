@@ -1,3 +1,4 @@
+spaces_imported, spaces = pcall(require, "hs._asm.undocumented.spaces") 
 local lastRun = 0
 
 function windowMove(wScale, hScale, xScale, yScale)
@@ -89,3 +90,50 @@ hs.hotkey.bind({"cmd", "alt"}, "Right", windowRight)
 hs.hotkey.bind({"cmd", "alt"}, "Up", windowTop)
 hs.hotkey.bind({"cmd", "alt"}, "Down", windowBottom)
 hs.hotkey.bind({"cmd", "alt", "ctrl"}, "Space", windowFull)
+
+
+function findIndex(items, fn)
+  for i, v in ipairs(items) do
+    if fn(v) then
+      return true, i
+    end
+  end
+
+  return false
+end
+
+function indexOf(items, item)
+  return findIndex(items, function(x) return x == item end)
+end
+
+function hello_world(x) print(x) end
+if spaces_imported then
+  function moveWindowBy(relative)
+    local uuid = spaces.mainScreenUUID()
+    local ids = spaces.spacesByScreenUUID()[uuid]
+    local spaceId = spaces.activeSpace()
+    local found, index = indexOf(ids, spaceId)
+
+    if found then
+      local newSpaceId = ids[index + relative]
+      if newSpaceId then
+        local w = hs.window.frontmostWindow()
+        spaces.moveWindowToSpace(w:id(), newSpaceId)
+        hs.alert("Moved '" .. w:title() .. "' to Space #" .. newSpaceId, 2)
+      else
+        hs.alert("There's no space in that direction!", 2)
+      end
+    end
+  end
+
+  function moveWindowRight()
+    moveWindowBy(-1)
+  end
+
+  function moveWindowLeft()
+    moveWindowBy(1)
+  end
+
+  hs.hotkey.bind({"cmd", "ctrl"}, "Right", moveWindowRight)
+  hs.hotkey.bind({"cmd", "ctrl"}, "Left", moveWindowLeft)
+end
