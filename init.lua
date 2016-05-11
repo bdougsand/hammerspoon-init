@@ -118,8 +118,13 @@ if spaces_imported then
       local newSpaceId = ids[index + relative]
       if newSpaceId then
         local w = hs.window.frontmostWindow()
+        local title = w:title()
+
+        if #title > 23 then
+          title = title:sub(0, 10) .. "..." .. title:sub(#title-9)
+        end
         spaces.moveWindowToSpace(w:id(), newSpaceId)
-        hs.alert("Moved '" .. w:title() .. "' to Space #" .. newSpaceId, 2)
+        hs.alert("Moved '" .. title .. "' to Space #" .. newSpaceId, 2)
       else
         hs.alert("There's no space in that direction!", 2)
       end
