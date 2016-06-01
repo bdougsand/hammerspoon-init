@@ -85,12 +85,25 @@ function windowFull()
   windowMove(1, 1, 0, 0)
 end
 
+function fillSpace()
+  local nextWindow = hs.window.orderedWindows()[2]
+  local nextFrame = nextWindow:frame()
+  local screenFrame = nextWindow:screen()
+  local isLeft = nextFrame.x < screenFrame.w/2
+
+  local window = hs.window.focusedWindow()
+  local frame = window:frame()
+  frame.w = isLeft and (screenFrame.w - nextFrame.x) or nextFrame.x
+  frame.x = isLeft and nextFrame.x + nextFrame.w or 0
+  window:setFrame(frame)
+end
+
 hs.hotkey.bind({"cmd", "alt"}, "Left", windowLeft)
 hs.hotkey.bind({"cmd", "alt"}, "Right", windowRight)
 hs.hotkey.bind({"cmd", "alt"}, "Up", windowTop)
 hs.hotkey.bind({"cmd", "alt"}, "Down", windowBottom)
 hs.hotkey.bind({"cmd", "alt", "ctrl"}, "Space", windowFull)
-
+hs.hotkey.bind({"cmd", "alt", "ctrl"}, ".", fillSpace)
 
 function findIndex(items, fn)
   for i, v in ipairs(items) do
@@ -106,7 +119,6 @@ function indexOf(items, item)
   return findIndex(items, function(x) return x == item end)
 end
 
-function hello_world(x) print(x) end
 if spaces_imported then
   function moveWindowBy(relative)
     local uuid = spaces.mainScreenUUID()
