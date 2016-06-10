@@ -1,6 +1,8 @@
 spaces_imported, spaces = pcall(require, "hs._asm.undocumented.spaces") 
 local lastRun = 0
 
+-- TODO: Modal window arrangement
+
 function windowMove(wScale, hScale, xScale, yScale)
   local now = hs.timer.secondsSinceEpoch()
   local window = hs.window.focusedWindow()
@@ -136,37 +138,91 @@ function indexOf(items, item)
 end
 
 if spaces_imported then
-  function moveWindowBy(relative)
-    local uuid = spaces.mainScreenUUID()
-    local ids = spaces.spacesByScreenUUID()[uuid]
-    local spaceId = spaces.activeSpace()
-    local found, index = indexOf(ids, spaceId)
+  function moveWindow(dir)
+    local w = hs.window.frontmostWindow()
+    local title = w:title()
 
-    if found then
-      local newSpaceId = ids[index + relative]
-      if newSpaceId then
-        local w = hs.window.frontmostWindow()
-        local title = w:title()
-
-        if #title > 23 then
-          title = title:sub(0, 10) .. "..." .. title:sub(#title-9)
-        end
-        spaces.moveWindowToSpace(w:id(), newSpaceId)
-        hs.alert("Moved '" .. title .. "' to Space #" .. newSpaceId, 2)
-      else
-        hs.alert("There's no space in that direction!", 2)
-      end
+    if #title > 23 then
+      title = title:sub(0, 10) .. "..." .. title:sub(#title-9)
     end
+    local fn = w["moveOneScreen" .. dir]
+    fn(w)
+
+    hs.alert("Moved '" .. title .. "' " .. dir, 2)
   end
 
   function moveWindowRight()
-    moveWindowBy(-1)
+    moveWindow("East")
   end
 
   function moveWindowLeft()
-    moveWindowBy(1)
+    moveWindow("West")
   end
 
   hs.hotkey.bind({"cmd", "ctrl"}, "Right", moveWindowRight)
   hs.hotkey.bind({"cmd", "ctrl"}, "Left", moveWindowLeft)
 end
+
+
+
+-- TODO: When the audio device changes, display current volume briefly
+-- TODO: Handle windows that can't be resized
+-- TODO: Multiple monitors -- doesn't work
+-- TODO: Fix bugs in moving windows
+-- TODO: Menubar countdown timer
+
+local menu = hs.menubar.new()
+local endTime = 0
+local standardTime = 1500
+local timer = nil
+local timerFormat = "%d:%02d"
+
+function updateTimerMenu()
+  local stopped = not timer
+  menu:setMenu( {
+      { title = "Start", fn = function() startTimer() end, disabled = not stopped },
+      { title = "Reset", fn = function() resetTimer() end, disabled = stopped }
+  })
+end
+
+function updateTimerIcon()
+  local timeLeft
+  if timer then
+    timeLeft = endTime - hs.timer.secondsSinceEpoch()
+  else
+    timeLeft = standardTime
+  end
+  local min = math.floor(timeLeft/60)
+  local sec = math.floor(timeLeft%60)
+
+  menu:setTitle(timerFormat:format(min, sec))
+end
+
+function updateTimer()
+  local timeLeft = endTime - hs.timer.secondsSinceEpoch()
+  if timeLeft <= 0 then
+    resetTimer()
+    updateTimerMenu()
+  end
+  updateTimerIcon()
+end
+
+function resetTimer()
+  if timer then
+    timer:stop()
+    timer = nil
+  end
+  updateTimerIcon()
+  updateTimerMenu()
+end
+
+function startTimer()
+  endTime = hs.timer.secondsSinceEpoch() + standardTime
+  timer = hs.timer.new(1, updateTimer)
+  timer:start()
+  updateTimerIcon()
+  updateTimerMenu()
+end
+
+updateTimerIcon()
+updateTimerMenu()
