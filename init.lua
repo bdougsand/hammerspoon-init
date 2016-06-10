@@ -85,6 +85,22 @@ function windowFull()
   windowMove(1, 1, 0, 0)
 end
 
+function windowTopLeft()
+  windowMove(0.5, 0.5, 0, 0)
+end
+
+function windowTopRight()
+  windowMove(0.5, 0.5, 0.5, 0)
+end
+
+function windowBottomRight()
+  windowMove(0.5, 0.5, 0.5, 0.5)
+end
+
+function windowBottomLeft()
+  windowMove(0.5, 0.5, 0, 0.5)
+end
+
 function fillSpace()
   local nextWindow = hs.window.orderedWindows()[2]
   local nextFrame = nextWindow:frame()
