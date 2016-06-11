@@ -201,8 +201,7 @@ end
 function updateTimer()
   local timeLeft = endTime - hs.timer.secondsSinceEpoch()
   if timeLeft <= 0 then
-    resetTimer()
-    updateTimerMenu()
+    finishTimer()
   end
   updateTimerIcon()
 end
@@ -214,6 +213,11 @@ function resetTimer()
   end
   updateTimerIcon()
   updateTimerMenu()
+end
+
+function finishTimer()
+  hs.alert.show("Time!", 4)
+  resetTimer()
 end
 
 function startTimer()
