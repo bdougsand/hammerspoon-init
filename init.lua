@@ -62,7 +62,7 @@ function windowMove(wScale, hScale, xScale, yScale)
       f.y = newY
       f.w = newW
       f.h = newH
-      window:setFrame(f)
+      window:setFrameInScreenBounds(f)
     end
   end
 end
@@ -163,25 +163,24 @@ if spaces_imported then
   hs.hotkey.bind({"cmd", "ctrl"}, "Left", moveWindowLeft)
 end
 
-
-
 -- TODO: When the audio device changes, display current volume briefly
 -- TODO: Handle windows that can't be resized
 -- TODO: Multiple monitors -- doesn't work
 -- TODO: Fix bugs in moving windows
--- TODO: Menubar countdown timer
 
 local menu = hs.menubar.new()
 local endTime = 0
 local standardTime = 1500
 local timer = nil
-local timerFormat = "%d:%02d"
+local timerFormat = "%d - %d:%02d"
+local counter = 0
 
 function updateTimerMenu()
   local stopped = not timer
   menu:setMenu( {
       { title = "Start", fn = function() startTimer() end, disabled = not stopped },
-      { title = "Reset", fn = function() resetTimer() end, disabled = stopped }
+      { title = "Reset", fn = function() resetTimer() end, disabled = stopped },
+      { title = "Reset Counter", fn = function() resetCounter() end}
   })
 end
 
@@ -195,7 +194,7 @@ function updateTimerIcon()
   local min = math.floor(timeLeft/60)
   local sec = math.floor(timeLeft%60)
 
-  menu:setTitle(timerFormat:format(min, sec))
+  menu:setTitle(timerFormat:format(counter, min, sec))
 end
 
 function updateTimer()
@@ -215,8 +214,14 @@ function resetTimer()
   updateTimerMenu()
 end
 
+function resetCounter()
+  counter = 0
+  updateTimerIcon()
+end
+
 function finishTimer()
   hs.alert.show("Time!", 4)
+  counter = counter + 1
   resetTimer()
 end
 
