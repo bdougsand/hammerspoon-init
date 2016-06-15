@@ -120,7 +120,6 @@ hs.hotkey.bind({"cmd", "alt"}, "Left", windowLeft)
 hs.hotkey.bind({"cmd", "alt"}, "Right", windowRight)
 hs.hotkey.bind({"cmd", "alt"}, "Up", windowTop)
 hs.hotkey.bind({"cmd", "alt"}, "Down", windowBottom)
-hs.hotkey.bind({"cmd", "alt", "ctrl"}, "Space", windowFull)
 hs.hotkey.bind({"cmd", "alt", "ctrl"}, ".", fillSpace)
 
 function findIndex(items, fn)
@@ -162,6 +161,17 @@ if spaces_imported then
   hs.hotkey.bind({"cmd", "ctrl"}, "Right", moveWindowRight)
   hs.hotkey.bind({"cmd", "ctrl"}, "Left", moveWindowLeft)
 end
+
+-- Modal window management:
+local windowManager = hs.hotkey.modal.new({"cmd", "alt", "ctrl"}, "Space", "Welcome to the Window Manager!")
+function windowManager:exited()
+  hs.alert("Goodbye!")
+end
+windowManager:bind("", "escape", function() windowManager:exit() end)
+windowManager:bind("", "space", windowFull)
+windowManager:bind("", "f", windowFull)
+windowManager:bind("", "right", windowRight)
+windowManager:bind("", "left", windowLeft)
 
 -- TODO: When the audio device changes, display current volume briefly
 -- TODO: Handle windows that can't be resized
