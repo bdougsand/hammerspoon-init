@@ -170,8 +170,14 @@ end
 windowManager:bind("", "escape", function() windowManager:exit() end)
 windowManager:bind("", "space", windowFull)
 windowManager:bind("", "f", windowFull)
-windowManager:bind("", "right", windowRight)
-windowManager:bind("", "left", windowLeft)
+windowManager:bind("", "d", windowRight)
+windowManager:bind("", "a", windowLeft)
+windowManager:bind("", "s", windowBottom)
+windowManager:bind("", "w", windowTop)
+windowManager:bind("", "q", windowTopLeft)
+windowManager:bind("", "e", windowTopRight)
+windowManager:bind("", "c", windowBottomRight)
+windowManager:bind("", "z", windowBottomLeft)
 
 -- TODO: When the audio device changes, display current volume briefly
 -- TODO: Handle windows that can't be resized
