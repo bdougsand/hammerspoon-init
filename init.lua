@@ -162,6 +162,13 @@ if spaces_imported then
   hs.hotkey.bind({"cmd", "ctrl"}, "Left", moveWindowLeft)
 end
 
+function moveWindowFn(dir)
+  local fn = hs.window["moveOneScreen" .. dir]
+  return function()
+    fn(hs.window.frontmostWindow())
+  end
+end
+
 -- Modal window management:
 local windowManager = hs.hotkey.modal.new({"cmd", "alt", "ctrl"}, "Space", "Welcome to the Window Manager!")
 function windowManager:exited()
@@ -178,6 +185,11 @@ windowManager:bind("", "q", windowTopLeft)
 windowManager:bind("", "e", windowTopRight)
 windowManager:bind("", "c", windowBottomRight)
 windowManager:bind("", "z", windowBottomLeft)
+-- Change screens:
+windowManager:bind("", "up", moveWindowFn("North"))
+windowManager:bind("", "down", moveWindowFn("South"))
+windowManager:bind("", "left", moveWindowFn("West"))
+windowManager:bind("", "right", moveWindowFn("East"))
 
 -- TODO: When the audio device changes, display current volume briefly
 -- TODO: Handle windows that can't be resized
