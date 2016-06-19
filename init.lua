@@ -1,12 +1,22 @@
 spaces_imported, spaces = pcall(require, "hs._asm.undocumented.spaces") 
 local lastRun = 0
 
--- TODO: Modal window arrangement
+function withRelativeWindow(n, fn)
+  return function(...)
+    local window = hs.window.focusedWindow()
+    if n > 0 then
+      window = window:otherWindowsSameScreen()[n]
+    end
+    fn(window, ...)
+  end
+end
 
-function windowMove(wScale, hScale, xScale, yScale)
+function withCurrentWindow(fn)
+  return withRelativeWindow(0, fn)
+end
+
+function doWindowMove(window, wScale, hScale, xScale, yScale)
   local now = hs.timer.secondsSinceEpoch()
-  local window = hs.window.focusedWindow()
-
   if window:isFullScreen() then
     return
   end
@@ -66,6 +76,8 @@ function windowMove(wScale, hScale, xScale, yScale)
     end
   end
 end
+
+local windowMove = withCurrentWindow(doWindowMove)
 
 function windowLeft()
   windowMove(0.5, 1, 0, 0)
