@@ -275,3 +275,18 @@ end
 
 updateTimerIcon()
 updateTimerMenu()
+
+
+local usbWatcher = nil
+function usbDeviceChange(data)
+  local name = data["productName"]
+
+  if data["eventType"] == "added" then
+    if name == "E-MU XMidi1X1" then
+      hs.application.launchOrFocus("GarageBand")
+    end
+  end
+end
+
+usbWatcher = hs.usb.watcher.new(usbDeviceChange)
+usbWatcher:start()
