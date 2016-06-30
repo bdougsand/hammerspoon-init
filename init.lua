@@ -181,11 +181,20 @@ function moveWindowFn(dir)
   end
 end
 
+function selectWindowFn(dir)
+  return function()
+    local w = hs.window.frontmostWindow()
+    hs.window["focusWindow" .. dir](w)
+  end
+end
+
+
 -- Modal window management:
 local windowManager = hs.hotkey.modal.new({"cmd", "alt", "ctrl"}, "Space", "Welcome to the Window Manager!")
 function windowManager:exited()
   hs.alert("Goodbye!")
 end
+
 windowManager:bind("", "escape", function() windowManager:exit() end)
 windowManager:bind("", "space", windowFull)
 windowManager:bind("", "f", windowFull)
@@ -202,6 +211,11 @@ windowManager:bind("", "up", moveWindowFn("North"))
 windowManager:bind("", "down", moveWindowFn("South"))
 windowManager:bind("", "left", moveWindowFn("West"))
 windowManager:bind("", "right", moveWindowFn("East"))
+
+windowManager:bind("", "j", selectWindowFn("South"))
+windowManager:bind("", "k", selectWindowFn("North"))
+windowManager:bind("", "h", selectWindowFn("West"))
+windowManager:bind("", "l", selectWindowFn("East"))
 
 -- TODO: When the audio device changes, display current volume briefly
 -- TODO: Handle windows that can't be resized
