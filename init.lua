@@ -262,3 +262,17 @@ end
 
 usbWatcher = hs.usb.watcher.new(usbDeviceChange)
 usbWatcher:start()
+function shellCommand(command)
+	local handle = io.popen(command)
+	local output = handle:read("*all")
+	local results = {handle:close()}
+	
+	return {results[1], output}
+end
+
+function emacsEval(command)
+	local emacs_path = "/usr/local/bin/emacsclient"
+	local full_command = string.format("%s -a false -e '%s'", 
+									  emacs_path, command:gsub("'", "\\'"))
+	return shellCommand(full_command)
+end
