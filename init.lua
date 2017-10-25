@@ -1,4 +1,3 @@
-spaces_imported, spaces = pcall(require, "hs._asm.undocumented.spaces") 
 local lastRun = 0
 
 function withRelativeWindow(n, fn)
@@ -148,7 +147,7 @@ end
 
 
 -- Modal window management:
-local windowManager = hs.hotkey.modal.new({"cmd", "alt", "ctrl"}, "Space", "Welcome to the Window Manager!")
+local windowManager = hs.hotkey.modal.new({"cmd", "alt", "ctrl"}, "Space", "Window Manager!")
 function windowManager:exited()
   hs.alert("Goodbye!")
 end
@@ -181,10 +180,10 @@ windowManager:bind("", "l", selectWindowFn("East"))
 -- TODO: Fix bugs in moving windows
 
 local menu = hs.menubar.new()
+--[[
 local endTime = 0
 local standardTime = 1500
 local timer = nil
-local timerFormat = "%d - %d:%02d"
 local counter = 0
 
 function updateTimerMenu()
@@ -247,6 +246,7 @@ end
 
 updateTimerIcon()
 updateTimerMenu()
+]]--
 
 
 local usbWatcher = nil
@@ -262,17 +262,157 @@ end
 
 usbWatcher = hs.usb.watcher.new(usbDeviceChange)
 usbWatcher:start()
+
+
+
+-- Network watching:
+local trusted_path = os.getenv("HOME") .. "/trusted_networks.txt"
+
+function writeTrusted(trusted)
+  local f = io.open(trusted_path, "w")
+  for k, _ in pairs(trusted) do
+    f:write(k .. "\n")
+  end
+  f:close()
+end
+
+function readTrusted()
+  local trusted = {}
+  for line in io.lines(trusted_path) do
+    if line:len() > 0 then
+      trusted[line] = true
+    else
+
+    end
+  end
+  return trusted
+end
+
+hs.wifi.watcher.new(function()
+    local trusted = readTrusted()
+    local network = hs.wifi.currentNetwork()
+
+    if not trusted[network] then
+      local choices = {
+        { text = "Trust this Network",
+          uuid = "trust" },
+        { text = "Connect to VPN",
+          uuid = "vpn" }
+      }
+      local chooser = hs.chooser.new(function(choice)
+          if choice == "trust" then
+            trusted[network] = true
+            writeTrusted(Trusted)
+          else
+            
+            -- Connect to VPN
+          end
+      end)
+    end
+end)
+
 function shellCommand(command)
 	local handle = io.popen(command)
 	local output = handle:read("*all")
 	local results = {handle:close()}
-	
-	return {results[1], output}
+
+	return output, results[1]
 end
 
-function emacsEval(command)
+function parseEmacsResponse(response)
+  if response == "nil" then
+    return nil
+  elseif response:match("^%d+$") then
+    return 0+response
+  end
+
+  local spatt = response:match("^\".*\"")
+  if spatt then
+    return spatt:sub(2, -2)
+  end
+
+  return response
+end
+
+function emacsEvalNoparse(command)
 	local emacs_path = "/usr/local/bin/emacsclient"
 	local full_command = string.format("%s -a false -e '%s'", 
 									  emacs_path, command:gsub("'", "\\'"))
 	return shellCommand(full_command)
 end
+
+function emacsEval(command)
+  return parseEmacsResponse(emacsEvalNoparse(command))
+end
+
+function pomodoroTimer()
+  local result, succ = emacsEval("(if (org-pomodoro-active-p) (org-pomodoro-format-seconds))")
+  if succ then
+    return result
+  else
+    return "0:00"
+  end
+end
+
+function timeSplit(timeStr)
+  local m = timeStr:gmatch("%d+")
+  return m(), m()
+end
+
+function timeSeconds(timeStr)
+  local m, s = timeSplit(timeStr)
+  return m*60+s
+end
+
+
+PomodoroTimer = {}
+PomodoroTimer.__index = PomodoroTimer
+
+function PomodoroTimer.new()
+  local init = {endTime = 0,
+                timer = nil,
+                menu = hs.menubar.new(),
+                timerFormat = "%d:%02d"}
+  setmetatable(init, PomodoroTimer)
+  return init
+end
+
+function PomodoroTimer:fetchTimeRemaining()
+  local result = pomodoroTimer()
+  if result then
+    self.endTime = timeSeconds(pomodoroTimer()) + hs.timer.secondsSinceEpoch()
+  else
+    self.endTime = hs.timer.secondsSinceEpoch()
+  end
+end
+
+function PomodoroTimer:timeRemaining()
+  return self.endTime - hs.timer.secondsSinceEpoch()
+end
+
+function PomodoroTimer:start()
+  if self.timer then
+    if not self.timer:running() then
+      self.timer:start()
+    end
+  else
+    local lastRun = 0
+    self.timer = hs.timer.doEvery(1, function()
+        local now = hs.timer.secondsSinceEpoch()
+        if now - lastRun >= 10 then
+          self:fetchTimeRemaining()
+        end
+        self:redrawMenuTitle()
+    end)
+  end
+end
+
+function PomodoroTimer:redrawMenuTitle()
+  local secs = self:timeRemaining()
+  local remaining = self.timerFormat:format(math.floor(secs/60), math.floor(secs%60))
+  self.menu:setTitle(remaining)
+end
+
+
+timerMenu = PomodoroTimer.new()
+timerMenu:start()
