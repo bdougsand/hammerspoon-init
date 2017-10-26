@@ -304,7 +304,6 @@ hs.wifi.watcher.new(function()
             trusted[network] = true
             writeTrusted(Trusted)
           else
-            
             -- Connect to VPN
           end
       end)
@@ -336,13 +335,18 @@ end
 
 function emacsEvalNoparse(command)
 	local emacs_path = "/usr/local/bin/emacsclient"
-	local full_command = string.format("%s -a false -e '%s'", 
+	local full_command = string.format("%s -n -a false -e '%s'", 
 									  emacs_path, command:gsub("'", "\\'"))
 	return shellCommand(full_command)
 end
 
 function emacsEval(command)
-  return parseEmacsResponse(emacsEvalNoparse(command))
+  local response, succ = emacsEvalNoparse(command)
+  if succ then
+    return parseEmacsResponse(response), true
+  else
+    return nil, false
+  end
 end
 
 function pomodoroTimer()
@@ -370,24 +374,51 @@ PomodoroTimer.__index = PomodoroTimer
 
 function PomodoroTimer.new()
   local init = {endTime = 0,
+                count = 0,
                 timer = nil,
                 menu = hs.menubar.new(),
-                timerFormat = "%d:%02d"}
+                timerFormat = "%d:%02d",
+                lastRun = 0,
+                endHooksRan = 0}
   setmetatable(init, PomodoroTimer)
   return init
 end
 
-function PomodoroTimer:fetchTimeRemaining()
+function PomodoroTimer:fetchEndTime()
   local result = pomodoroTimer()
   if result then
     self.endTime = timeSeconds(pomodoroTimer()) + hs.timer.secondsSinceEpoch()
   else
     self.endTime = hs.timer.secondsSinceEpoch()
   end
+  return self.endTime
+end
+
+function PomodoroTimer:fetchCount()
+  self.count = emacsEval("org-pomodoro-count") or 0
 end
 
 function PomodoroTimer:timeRemaining()
   return self.endTime - hs.timer.secondsSinceEpoch()
+end
+
+function PomodoroTimer:tick()
+  local now = hs.timer.secondsSinceEpoch()
+  if now - self.lastRun >= 10 then
+    self:fetchEndTime()
+  end
+  self:redrawMenuTitle()
+  self.lastRun = now
+
+  if self.endTime - now <= 0 and self.endHooksRan ~= self.endTime then
+    self:runEndHooks()
+  end
+end
+
+function PomodoroTimer:runEndHooks()
+  self.endHooksRan = self.endTime
+  self:fetchCount()
+  print("Ran end hooks.")
 end
 
 function PomodoroTimer:start()
@@ -396,21 +427,14 @@ function PomodoroTimer:start()
       self.timer:start()
     end
   else
-    local lastRun = 0
-    self.timer = hs.timer.doEvery(1, function()
-        local now = hs.timer.secondsSinceEpoch()
-        if now - lastRun >= 10 then
-          self:fetchTimeRemaining()
-        end
-        self:redrawMenuTitle()
-    end)
+    self.timer = hs.timer.doEvery(1, function() self:tick() end)
   end
 end
 
 function PomodoroTimer:redrawMenuTitle()
   local secs = self:timeRemaining()
   local remaining = self.timerFormat:format(math.floor(secs/60), math.floor(secs%60))
-  self.menu:setTitle(remaining)
+  self.menu:setTitle(string.format("%d — %s", self.count, remaining))
 end
 
 
