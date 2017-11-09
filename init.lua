@@ -310,115 +310,59 @@ hs.wifi.watcher.new(function()
     end
 end)
 
-function shellCommand(command)
-	local handle = io.popen(command)
-	local output = handle:read("*all")
-	local results = {handle:close()}
 
-	return output, results[1]
+local emacs = require("emacs")
+for _, messageType in ipairs({"pomodoroStarted", "pomodoroFinished",
+                              "pomodoroKilled", "pomodoroBreakFinished"}) do
+  emacs.addHandler(messageType, function(message)
+                     timerMenu:updateState(message)
+  end)
 end
-
-function parseEmacsResponse(response)
-  if response == "nil" then
-    return nil
-  elseif response:match("^%d+$") then
-    return 0+response
-  end
-
-  local spatt = response:match("^\".*\"")
-  if spatt then
-    return spatt:sub(2, -2)
-  end
-
-  return response
-end
-
-function emacsEvalNoparse(command)
-	local emacs_path = "/usr/local/bin/emacsclient"
-	local full_command = string.format("%s -n -a false -e '%s'", 
-									  emacs_path, command:gsub("'", "\\'"))
-	return shellCommand(full_command)
-end
-
-function emacsEval(command)
-  local response, succ = emacsEvalNoparse(command)
-  if succ then
-    return parseEmacsResponse(response), true
-  else
-    return nil, false
-  end
-end
-
-function pomodoroTimer()
-  local result, succ = emacsEval("(if (org-pomodoro-active-p) (org-pomodoro-format-seconds))")
-  if succ then
-    return result
-  else
-    return "0:00"
-  end
-end
-
-function timeSplit(timeStr)
-  local m = timeStr:gmatch("%d+")
-  return m(), m()
-end
-
-function timeSeconds(timeStr)
-  local m, s = timeSplit(timeStr)
-  return m*60+s
-end
-
 
 PomodoroTimer = {}
 PomodoroTimer.__index = PomodoroTimer
 
 function PomodoroTimer.new()
   local init = {endTime = 0,
+                state = "waiting",
                 count = 0,
                 timer = nil,
                 menu = hs.menubar.new(),
                 timerFormat = "%d:%02d",
-                lastRun = 0,
                 endHooksRan = 0}
   setmetatable(init, PomodoroTimer)
   return init
 end
 
-function PomodoroTimer:fetchEndTime()
-  local result = pomodoroTimer()
-  if result then
-    self.endTime = timeSeconds(pomodoroTimer()) + hs.timer.secondsSinceEpoch()
+function PomodoroTimer:updateState(event)
+  local msgType = event["type"]
+  local stopped = msgType == "pomodoroKilled" or msgType == "pomodoroFinished"
+  self.endTime = stopped and -1 or hs.timer.secondsSinceEpoch() + event["timeRemaining"]
+
+  if msgType == "pomodoroStarted" then
+    self.state = "running"
+  elseif msgType == "pomodoroFinished" then
+    self.state = "break"
   else
-    self.endTime = hs.timer.secondsSinceEpoch()
+    self.state = "waiting"
   end
-  return self.endTime
+
+  self.count = event["count"]
 end
 
-function PomodoroTimer:fetchCount()
-  self.count = emacsEval("org-pomodoro-count") or 0
+function PomodoroTimer:getState()
+  local message = emacs.evalJSON("(json-encode (hammerspoon--get-pomodoro-state))")
+  if message then
+    self:updateState(message)
+  end
 end
 
 function PomodoroTimer:timeRemaining()
-  return self.endTime - hs.timer.secondsSinceEpoch()
+	return self.endTime - hs.timer.secondsSinceEpoch()
 end
 
 function PomodoroTimer:tick()
-  local now = hs.timer.secondsSinceEpoch()
-  if now - self.lastRun >= 10 then
-    self:fetchEndTime()
-  end
   self:redrawMenuTitle()
-  self.lastRun = now
-
-  if self.endTime - now <= 0 and self.endHooksRan ~= self.endTime then
-    self:runEndHooks()
-  end
-end
-
-function PomodoroTimer:runEndHooks()
-  self.endHooksRan = self.endTime
-  self:fetchCount()
-  print("Ran end hooks.")
 end
 
 function PomodoroTimer:start()
@@ -434,9 +378,21 @@ end
 function PomodoroTimer:redrawMenuTitle()
   local secs = self:timeRemaining()
   local remaining = self.timerFormat:format(math.floor(secs/60), math.floor(secs%60))
-  self.menu:setTitle(string.format("%d — %s", self.count, remaining))
+  local title
+
+  if self.state == "running" then
+	  title = string.format("⏱ [%d] %s", self.count, remaining)
+  elseif self.state == "break" then
+	  title = string.format("☕️ [%d] (%s)", self.count, remaining)
+  else
+	  title = string.format("⋯ [%d]", self.count)
+  end
+
+  self.menu:setTitle(title)
 end
 
 
-timerMenu = PomodoroTimer.new()
+local timerMenu = PomodoroTimer.new()
+timerMenu:getState()
 timerMenu:start()
+
