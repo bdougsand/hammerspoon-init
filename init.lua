@@ -319,12 +319,6 @@ end)
 
 
 local emacs = require("emacs")
-for _, messageType in ipairs({"pomodoroStarted", "pomodoroFinished",
-                              "pomodoroKilled", "pomodoroBreakFinished"}) do
-  emacs.addHandler(messageType, function(message)
-                     timerMenu:updateState(message)
-  end)
-end
 
 PomodoroTimer = {}
 PomodoroTimer.__index = PomodoroTimer
@@ -336,25 +330,37 @@ function PomodoroTimer.new()
                 timer = nil,
                 menu = hs.menubar.new(),
                 timerFormat = "%d:%02d",
+                task = nil,
                 endHooksRan = 0}
   setmetatable(init, PomodoroTimer)
   return init
 end
 
+local eventStates = { pomodoroStarted = "running",
+                      pomodoroFinished = "break",
+                      pomodoroKilled = "waiting",
+                      pomodoroBreakFinished = "waiting",
+                      clockIn = "running" }
+
 function PomodoroTimer:updateState(event)
   local msgType = event["type"]
   local stopped = msgType == "pomodoroKilled" or msgType == "pomodoroFinished"
-  self.endTime = stopped and -1 or hs.timer.secondsSinceEpoch() + event["timeRemaining"]
-
-  if msgType == "pomodoroStarted" then
-    self.state = "running"
-  elseif msgType == "pomodoroFinished" then
-    self.state = "break"
-  else
-    self.state = "waiting"
-  end
+  self.endTime = hs.timer.secondsSinceEpoch() + event["timeRemaining"]
+  self.task = event["task"]
+  self.state = eventStates[msgType]
 
   self.count = event["count"]
+  self:updateMenu()
+end
+
+function PomodoroTimer:updateMenu()
+  if self.state == "running" then
+    self.menu
+      :setMenu({{ title = self.task, disabled = true}})
+      :setTooltip(self.task)
+  else
+    self.menu:setMenu(nil):setTooltip("")
+  end
 end
 
 function PomodoroTimer:getState()
@@ -402,4 +408,15 @@ end
 local timerMenu = PomodoroTimer.new()
 timerMenu:getState()
 timerMenu:start()
+
+for _, messageType in ipairs({"pomodoroStarted", "pomodoroFinished",
+                              "pomodoroKilled", "pomodoroBreakFinished",
+                              "clockIn"}) do
+  emacs.addHandler(messageType,
+                   function(message)
+                     timerMenu:updateState(message)
+                   end
+  )
+end
+
 
