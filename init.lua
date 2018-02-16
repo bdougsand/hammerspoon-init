@@ -22,19 +22,15 @@ function doWindowMove(window, wScale, hScale, xScale, yScale)
   local f = window:frame()
   local screenFrame = window:screen():frame()
 
-  local newX = screenFrame.w*xScale + screenFrame.x
-  local newY = screenFrame.h*yScale + screenFrame.y
-  local newW = screenFrame.w*wScale
-  local newH = screenFrame.h*hScale
+  f.x = xScale and (screenFrame.w*xScale + screenFrame.x) or f.x
+  f.y = yScale and (screenFrame.h*yScale + screenFrame.y) or f.y
+  f.w = wScale and (screenFrame.w*wScale) or f.w
+  f.h = hScale and (screenFrame.h*hScale) or f.h
 
-  f.x = newX
-  f.y = newY
-  f.w = newW
-  f.h = newH
   window:setFrame(f)
 end
 
-local windowMove = withCurrentWindow(doWindowMove)
+windowMove = withCurrentWindow(doWindowMove)
 
 function windowLeft()
   windowMove(0.5, 1, 0, 0)
@@ -71,6 +67,11 @@ end
 function windowBottomLeft()
   windowMove(0.5, 0.5, 0, 0.5)
 end
+
+function windowFillHeight()
+  windowMove(nil, 1)
+end
+
 
 function fillSpace()
   local nextWindow = hs.window.orderedWindows()[2]
@@ -152,27 +153,33 @@ function windowManager:exited()
   hs.alert("Goodbye!")
 end
 
-windowManager:bind("", "escape", function() windowManager:exit() end)
-windowManager:bind("", "space", windowFull)
-windowManager:bind("", "f", windowFull)
-windowManager:bind("", "d", windowRight)
-windowManager:bind("", "a", windowLeft)
-windowManager:bind("", "s", windowBottom)
-windowManager:bind("", "w", windowTop)
-windowManager:bind("", "q", windowTopLeft)
-windowManager:bind("", "e", windowTopRight)
-windowManager:bind("", "c", windowBottomRight)
-windowManager:bind("", "z", windowBottomLeft)
--- Change screens:
-windowManager:bind("", "up", moveWindowFn("North"))
-windowManager:bind("", "down", moveWindowFn("South"))
-windowManager:bind("", "left", moveWindowFn("West"))
-windowManager:bind("", "right", moveWindowFn("East"))
+windowManager
+  :bind("", "escape", function() windowManager:exit() end)
+  :bind("", "space", windowFull)
+  :bind("", "f", windowFull)
+  :bind("", "d", windowRight)
+  :bind("", "]", windowRight)
+  :bind("", "a", windowLeft)
+  :bind("", "[", windowLeft)
+  :bind("", "s", windowBottom)
+  :bind("", "w", windowTop)
+  :bind("", "q", windowTopLeft)
+  :bind("", "e", windowTopRight)
+  :bind("", "c", windowBottomRight)
+  :bind("", "z", windowBottomLeft)
+  :bind("shift", "\\", windowFillHeight)
 
-windowManager:bind("", "j", selectWindowFn("South"))
-windowManager:bind("", "k", selectWindowFn("North"))
-windowManager:bind("", "h", selectWindowFn("West"))
-windowManager:bind("", "l", selectWindowFn("East"))
+-- Change screens:
+windowManager
+  :bind("", "up", moveWindowFn("North"))
+  :bind("", "down", moveWindowFn("South"))
+  :bind("", "left", moveWindowFn("West"))
+  :bind("", "right", moveWindowFn("East"))
+
+  :bind("", "j", selectWindowFn("South"))
+  :bind("", "k", selectWindowFn("North"))
+  :bind("", "h", selectWindowFn("West"))
+  :bind("", "l", selectWindowFn("East"))
 
 -- TODO: When the audio device changes, display current volume briefly
 -- TODO: Handle windows that can't be resized
