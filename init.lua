@@ -319,6 +319,7 @@ end)
 
 
 local emacs = require("emacs")
+local utils = require("utils")
 
 PomodoroTimer = {}
 PomodoroTimer.__index = PomodoroTimer
@@ -331,6 +332,7 @@ function PomodoroTimer.new()
                 menu = hs.menubar.new(),
                 timerFormat = "%d:%02d",
                 task = nil,
+                bufferName = nil,
                 endHooksRan = 0}
   setmetatable(init, PomodoroTimer)
   return init
@@ -347,6 +349,7 @@ function PomodoroTimer:updateState(event)
   local stopped = msgType == "pomodoroKilled" or msgType == "pomodoroFinished"
   self.endTime = hs.timer.secondsSinceEpoch() + event["timeRemaining"]
   self.task = event["task"]
+  self.bufferName = utils.title(event["bufferName"] or "")
   self.state = eventStates[msgType]
 
   self.count = event["count"]
@@ -356,7 +359,9 @@ end
 function PomodoroTimer:updateMenu()
   if self.state == "running" then
     self.menu
-      :setMenu({{ title = self.task, disabled = true}})
+      :setMenu({
+          { title = self.bufferName, disabled = true },
+          { title = self.task, disabled = true}})
       :setTooltip(self.task)
   else
     self.menu:setMenu(nil):setTooltip("")
