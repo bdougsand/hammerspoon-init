@@ -331,6 +331,7 @@ function PomodoroTimer.new()
                 timer = nil,
                 menu = hs.menubar.new(),
                 timerFormat = "%d:%02d",
+                -- Full path to the task
                 task = nil,
                 bufferName = nil,
                 endHooksRan = 0}
@@ -348,7 +349,7 @@ function PomodoroTimer:updateState(event)
   local msgType = event["type"]
   local stopped = msgType == "pomodoroKilled" or msgType == "pomodoroFinished"
   self.endTime = hs.timer.secondsSinceEpoch() + event["timeRemaining"]
-  self.task = event["task"]
+  self.task = event["taskPath"] or {}
   self.bufferName = utils.title(event["bufferName"] or "")
   self.state = eventStates[msgType]
 
@@ -358,11 +359,20 @@ end
 
 function PomodoroTimer:updateMenu()
   if self.state == "running" then
-    self.menu
-      :setMenu({
-          { title = self.bufferName, disabled = true },
-          { title = self.task, disabled = true}})
-      :setTooltip(self.task)
+    local taskName = self.task[#self.task]
+    local menuItems = {
+      { title = self.bufferName, disabled = true }}
+
+    local l = #self.task
+    for i, pathComponent in ipairs(self.task) do
+      local title = pathComponent
+      if i < l then
+        title = title .. " -> "
+      end
+      table.insert(menuItems, { title = title, disabled = true })
+    end
+
+    self.menu:setMenu(menuItems):setTooltip(taskName)
   else
     self.menu:setMenu(nil):setTooltip("")
   end
@@ -391,6 +401,8 @@ function PomodoroTimer:start()
   else
     self.timer = hs.timer.doEvery(1, function() self:tick() end)
   end
+
+  return self
 end
 
 function PomodoroTimer:redrawMenuTitle()
@@ -407,10 +419,11 @@ function PomodoroTimer:redrawMenuTitle()
   end
 
   self.menu:setTitle(title)
+  return self
 end
 
 
-local timerMenu = PomodoroTimer.new()
+timerMenu = PomodoroTimer.new()
 timerMenu:getState()
 timerMenu:start()
 
