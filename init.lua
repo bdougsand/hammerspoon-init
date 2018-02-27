@@ -321,6 +321,17 @@ end)
 local emacs = require("emacs")
 local utils = require("utils")
 
+
+function printAgendaTime()
+  local minutes = emacs.getAgendaTime()
+  local hours = math.floor(minutes/60)
+  local minutes = math.floor(minutes % 60)
+  local message = string.format("%s:%02s", hours, minutes)
+
+  hs.alert.show(message)
+end
+
+
 PomodoroTimer = {}
 PomodoroTimer.__index = PomodoroTimer
 
@@ -361,6 +372,7 @@ function PomodoroTimer:updateMenu()
   if self.state == "running" then
     local taskName = self.task[#self.task]
     local menuItems = {
+      { title = "Print Total Time", fn = printAgendaTime },
       { title = self.bufferName, disabled = true }}
 
     local l = #self.task
@@ -374,7 +386,13 @@ function PomodoroTimer:updateMenu()
 
     self.menu:setMenu(menuItems):setTooltip(taskName)
   else
-    self.menu:setMenu(nil):setTooltip("")
+    self.menu:setMenu({{ title = "Print Total Time", fn = printAgendaTime }}):setTooltip("")
+  end
+end
+
+function PomodoroTimer:emacsEvent(event)
+  if event["type"] == "pomodoroFinished" then
+    hs.timer.doAfter(1, printAgendaTime)
   end
 end
 
@@ -433,8 +451,10 @@ for _, messageType in ipairs({"pomodoroStarted", "pomodoroFinished",
   emacs.addHandler(messageType,
                    function(message)
                      timerMenu:updateState(message)
+                     timerMenu:emacsEvent(message)
                    end
   )
 end
+
 
 

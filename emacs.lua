@@ -92,5 +92,10 @@ function emacs.evalJSON(command)
   end
 end
 
+function emacs.getAgendaTime()
+  local minutes = emacs.eval("(hammerspoon--total-time-today)")
+  return minutes
+end
+
 
 return emacs
