@@ -392,7 +392,9 @@ end
 
 function PomodoroTimer:emacsEvent(event)
   if event["type"] == "pomodoroFinished" then
-    hs.timer.doAfter(1, printAgendaTime)
+    if not self._printTimeTimer then
+      self._printTimeTimer = hs.timer.doAfter(1, printAgendaTime)
+    end
   end
 end
 
