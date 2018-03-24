@@ -181,6 +181,16 @@ windowManager
   :bind("", "h", selectWindowFn("West"))
   :bind("", "l", selectWindowFn("East"))
 
+
+
+function doToggleMute()
+  local device = hs.audiodevice.defaultOutputDevice()
+  device:setOutputMuted(not device:outputMuted())
+end
+
+hs.hotkey.bind({}, "F12", doToggleMute)
+
+
 -- TODO: When the audio device changes, display current volume briefly
 -- TODO: Handle windows that can't be resized
 -- TODO: Multiple monitors -- doesn't work
