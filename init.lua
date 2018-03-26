@@ -189,6 +189,7 @@ function doToggleMute()
 end
 
 hs.hotkey.bind({}, "F12", doToggleMute)
+hs.hotkey.bind({}, "F2", hs.spotify.displayCurrentTrack)
 
 
 -- TODO: When the audio device changes, display current volume briefly
