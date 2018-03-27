@@ -188,7 +188,19 @@ function doToggleMute()
   device:setOutputMuted(not device:outputMuted())
 end
 
+local lastSpotifyVolume = hs.spotify.getVolume()
+function doToggleSpotifyMute()
+  local volume = hs.spotify.getVolume()
+  if volume <= 5 then
+    hs.spotify.setVolume(lastSpotifyVolume)
+  else
+    hs.spotify.setVolume(1)
+    lastSpotifyVolume = volume
+  end
+end
+
 hs.hotkey.bind({}, "F12", doToggleMute)
+hs.hotkey.bind({"shift"}, "F12", doToggleSpotifyMute)
 hs.hotkey.bind({}, "F2", hs.spotify.displayCurrentTrack)
 
 
