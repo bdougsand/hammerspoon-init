@@ -199,9 +199,19 @@ function doToggleSpotifyMute()
   end
 end
 
+function doCopySpotifySongDetails()
+  local title = hs.spotify.getCurrentTrack()
+  local artist = hs.spotify.getCurrentArtist()
+  local album = hs.spotify.getCurrentAlbum()
+
+  hs.pasteboard.setContents(
+    "\"" .. title .. "\" by " .. artist .. " (from " .. album .. ")")
+end
+
 hs.hotkey.bind({}, "F12", doToggleMute)
 hs.hotkey.bind({"shift"}, "F12", doToggleSpotifyMute)
 hs.hotkey.bind({}, "F2", hs.spotify.displayCurrentTrack)
+hs.hotkey.bind({"shift"}, "F2", doCopySpotifySongDetails)
 
 
 -- TODO: When the audio device changes, display current volume briefly
