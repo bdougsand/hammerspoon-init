@@ -1,3 +1,4 @@
+
 local lastRun = 0
 
 function withRelativeWindow(n, fn)
@@ -86,11 +87,15 @@ function fillSpace()
   window:setFrame(frame)
 end
 
+local windows = require("windows")
+
 hs.hotkey.bind({"cmd", "alt"}, "Left", windowLeft)
 hs.hotkey.bind({"cmd", "alt"}, "Right", windowRight)
 hs.hotkey.bind({"cmd", "alt"}, "Up", windowTop)
 hs.hotkey.bind({"cmd", "alt"}, "Down", windowBottom)
 hs.hotkey.bind({"cmd", "alt", "ctrl"}, ".", fillSpace)
+
+hs.hotkey.bind({}, "F5", windows.moveAppWindowsToSpace)
 
 function findIndex(items, fn)
   for i, v in ipairs(items) do
@@ -146,7 +151,6 @@ function selectWindowFn(dir)
   end
 end
 
-
 -- Modal window management:
 local windowManager = hs.hotkey.modal.new({"cmd", "alt", "ctrl"}, "Space", "Window Manager!")
 function windowManager:exited()
@@ -168,6 +172,7 @@ windowManager
   :bind("", "c", windowBottomRight)
   :bind("", "z", windowBottomLeft)
   :bind("shift", "\\", windowFillHeight)
+    :bind("", "=", windows.moveAppWindowsToSpace)
 
 -- Change screens:
 windowManager
