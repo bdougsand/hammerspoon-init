@@ -96,6 +96,7 @@ hs.hotkey.bind({"cmd", "alt"}, "Down", windowBottom)
 hs.hotkey.bind({"cmd", "alt", "ctrl"}, ".", fillSpace)
 
 hs.hotkey.bind({}, "F5", windows.moveAppWindowsToSpace)
+hs.hotkey.bind({"shift"}, "F5", windows.moveForemostAppWindowToSpace)
 
 function findIndex(items, fn)
   for i, v in ipairs(items) do
