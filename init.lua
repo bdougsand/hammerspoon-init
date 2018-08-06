@@ -194,31 +194,9 @@ function doToggleMute()
   device:setOutputMuted(not device:outputMuted())
 end
 
-local lastSpotifyVolume = hs.spotify.getVolume()
-function doToggleSpotifyMute()
-  local volume = hs.spotify.getVolume()
-  if volume <= 5 then
-    hs.spotify.setVolume(lastSpotifyVolume)
-  else
-    hs.spotify.setVolume(1)
-    lastSpotifyVolume = volume
-  end
-end
-
-function doCopySpotifySongDetails()
-  local title = hs.spotify.getCurrentTrack()
-  local artist = hs.spotify.getCurrentArtist()
-  local album = hs.spotify.getCurrentAlbum()
-
-  hs.pasteboard.setContents(
-    "\"" .. title .. "\" by " .. artist .. " (from " .. album .. ")")
-end
+-- local spotify = require("spotify")
 
 hs.hotkey.bind({}, "F12", doToggleMute)
-hs.hotkey.bind({"shift"}, "F12", doToggleSpotifyMute)
-hs.hotkey.bind({}, "F2", hs.spotify.displayCurrentTrack)
-hs.hotkey.bind({"shift"}, "F2", doCopySpotifySongDetails)
-
 
 -- TODO: When the audio device changes, display current volume briefly
 -- TODO: Handle windows that can't be resized
