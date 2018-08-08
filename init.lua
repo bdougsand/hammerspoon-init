@@ -338,7 +338,6 @@ end)
 local emacs = require("emacs")
 local utils = require("utils")
 
-
 function printAgendaTime()
   local minutes = emacs.getAgendaTime()
   local hours = math.floor(minutes/60)
@@ -459,6 +458,7 @@ function PomodoroTimer:redrawMenuTitle()
   return self
 end
 
+emacs.openPort()
 
 timerMenu = PomodoroTimer.new()
 timerMenu:getState()

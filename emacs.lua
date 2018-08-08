@@ -22,29 +22,69 @@ function emacs.defaultHandler(object)
   end
 end
 
-local ipc = require("hs.ipc")
-if ipc.cliInstall() then
-  ipc.localPort("emacsInterop", function(port, mID, rawMessage)
-                  if rawMessage:sub(1, 1) == "x" then
-                    local succ, result = pcall(hs.json.decode, rawMessage:sub(2))
-                    if succ then
-                      return ">>" .. hs.json.encode(emacs.defaultHandler(result))
-                    else
-                      return ">>" .. hs.json.encode({error="parseError"})
-                    end
-                  end
-  end)
-  emacsRemotePort = hs.ipc.remotePort("emacsInterop")
+local localPort = nil
+local emacsPort = nil
+local retryTimer = nil
+
+function emacs.openPort()
+  local ipc = require("hs.ipc")
+  if remotePort and remotePort:isValid() then
+    return remotePort
+  elseif ipc.cliInstall() then
+    localPort = ipc.localPort(
+      "emacsInterop",
+      function(port, mID, rawMessage)
+        if rawMessage:sub(1, 1) == "x" then
+          local succ, result = pcall(hs.json.decode, rawMessage:sub(2))
+          if succ then
+            return ">>" .. hs.json.encode(emacs.defaultHandler(result))
+          else
+            return ">>" .. hs.json.encode({error="parseError"})
+          end
+        else
+          print("Got unknown message: " .. rawMessage)
+
+          if not port:isValid() then
+            print("Connection broken")
+            localPort = nil
+            remotePort = nil
+
+            if retryTimer then
+              retryTimer:stop()
+            end
+
+            retryTimer = hs.timer.doWhile(
+              function()
+                return not (localPort and remotePort)
+              end,
+              function()
+                emacs.openPort()
+            end)
+          end
+        end
+    end)
+
+    remotePort = hs.ipc.remotePort("emacsInterop")
+
+    return remotePort
+  end
 end
 
+function emacs.getLocalPort()
+  return localPort
+end
+
+function emacs.getRemotePort()
+  return remotePort
+end
 
 -- Send messages to emacs:
 local function shellCommand(command)
-	local handle = io.popen(command)
-	local output = handle:read("*all")
-	local results = {handle:close()}
+  local handle = io.popen(command)
+  local output = handle:read("*all")
+  local results = {handle:close()}
 
-	return output, results[1]
+  return output, results[1]
 end
 
 local function parseResponse(response)
